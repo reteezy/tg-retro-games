@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro Racer</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        /* Кнопка Домой */
+        .home-btn {
+            position: absolute; top: 10px; left: 10px; 
+            text-decoration: none; font-size: 24px; z-index: 100;
+        }
+
+        #game-container {
+            position: relative;
+            width: 300px;
+            height: 500px;
+            border: 2px solid #3390ec;
+            background-color: #333;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        /* Дорога */
+        .road {
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                #333, #333 40px,
+                #444 40px, #444 80px
+            );
+            animation: roadMove 1s linear infinite;
+        }
+
+        @keyframes roadMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 80px; }
+        }
+
+        /* Игрок */
+        #player {
+            position: absolute;
+            bottom: 20px;
+            left: 130px; /* Центр (300/2 - 40/2) */
+            width: 40px;
+            height: 70px;
+            background-color: #ff3b30; /* Красная машина */
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 10;
+            transition: left 0.1s ease-out;
+        }
+        
+        /* Фары и детали для красоты */
+        #player::before {
+            content: ''; position: absolute; top: 5px; left: 2px; width: 8px; height: 10px; background: yellow; border-radius: 2px; box-shadow: 28px 0 0 yellow;
+        }
+        #player::after {
+            content: ''; position: absolute; bottom: 5px; left: 2px; width: 8px; height: 6px; background: #550000; border-radius: 2px; box-shadow: 28px 0 0 #550000;
+        }
+
+        /* Препятствие */
+        .obstacle {
+            position: absolute;
+            top: -100px;
+            width: 40px;
+            height: 70px;
+            background-color: #3390ec; /* Синяя машина */
+            border-radius: 5px;
+        }
+
+        .score-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 20;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        /* Экран Game Over */
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #ff3b30;
+            z-index: 30;
+            width: 200px;
+        }
+        
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #3390ec;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        /* Зоны управления для телефона */
+        .touch-zone {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 50%;
+            z-index: 5;
+        }
+        #left-zone { left: 0; }
+        #right-zone { right: 0; }
+
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="home-btn">🏠</a>
+
+    <div class="score-panel">Score: <span id="score">0</span></div>
+
+    <div id="game-container">
+        <div class="road" id="road"></div>
+        <div id="player"></div>
+    </div>
+
+    <!-- Невидимые кнопки для тапов -->
+    <div id="left-zone" class="touch-zone"></div>
+    <div id="right-zone" class="touch-zone"></div>
+
+    <div id="game-over">
+        <h2>CRASH! 💥</h2>
+        <p>Счет: <span id="final-score">0</span></p>
+        <button onclick="restartGame()">Заново</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const player = document.getElementById('player');
+        const container = document.getElementById('game-container');
+        const road = document.getElementById('road');
+        const scoreEl = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+
+        let playerPos = 1; // 0 - лево, 1 - центр, 2 - право
+        // Позиции в пикселях (центры полос): 
+        // Ширина поля 300. Полосы примерно по 100px.
+        // Центры: 50px, 150px, 250px. 
+        // Ширина машины 40. Значит left: 30px, 130px, 230px.
+        const positions = [30, 130, 230];
+        
+        let score = 0;
+        let speed = 5;
+        let isGameOver = false;
+        let obstacles = [];
+        let gameLoopId;
+        let spawnIntervalId;
+
+        function movePlayer(direction) {
+            if (isGameOver) return;
+            
+            if (direction === 'left' && playerPos > 0) playerPos--;
+            if (direction === 'right' && playerPos < 2) playerPos++;
+            
+            player.style.left = positions[playerPos] + 'px';
+            try { tg.HapticFeedback.selectionChanged(); } catch(e){}
+        }
+
+        function createObstacle() {
+            if (isGameOver) return;
+
+            const obs = document.createElement('div');
+            obs.className = 'obstacle';
+            
+            // Случайная полоса (0, 1 или 2)
+            const lane = Math.floor(Math.random() * 3);
+            obs.style.left = positions[lane] + 'px';
+            obs.style.top = '-100px';
+            
+            // Рандомный цвет препятствия
+            const colors = ['#3390ec', '#34c759', '#ffcc00', '#ffffff'];
+            obs.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+            container.appendChild(obs);
+            obstacles.push({ element: obs, lane: lane, y: -100 });
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            // Двигаем препятствия
+            obstacles.forEach((obs, index) => {
+                obs.y += speed;
+                obs.element.style.top = obs.y + 'px';
+
+                // Проверка столкновения
+                // Игрок Y (фиксирован): 500 (высота) - 20 (bottom) - 70 (высота машины) = 410 (верхняя грань)
+                // Препятствие Y: obs.y (верх) + 70 (высота) = низ
+                if (obs.y + 70 > 410 && obs.y < 480 && obs.lane === playerPos) {
+                    endGame();
+                }
+
+                // Удаление если уехало вниз
+                if (obs.y > 550) {
+                    obs.element.remove();
+                    obstacles.splice(index, 1);
+                    score++;
+                    scoreEl.innerText = score;
+                    
+                    // Ускорение каждые 10 очков
+                    if (score % 10 === 0) {
+                        speed += 0.5;
+                        // Ускоряем анимацию дороги
+                        road.style.animationDuration = (1 / (speed/5)) + 's';
+                    }
+                }
+            });
+
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        function endGame() {
+            isGameOver = true;
+            cancelAnimationFrame(gameLoopId);
+            clearInterval(spawnIntervalId);
+            try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
+            
+            document.getElementById('final-score').innerText = score;
+            gameOverScreen.style.display = 'block';
+            road.style.animationPlayState = 'paused';
+        }
+
+        function restartGame() {
+            // Очистка
+            obstacles.forEach(o => o.element.remove());
+            obstacles = [];
+            score = 0;
+            speed = 5;
+            isGameOver = false;
+            playerPos = 1;
+            player.style.left = positions[1] + 'px';
+            scoreEl.innerText = '0';
+            gameOverScreen.style.display = 'none';
+            road.style.animationPlayState = 'running';
+            road.style.animationDuration = '1s';
+
+            startGame();
+        }
+
+        function startGame() {
+            updateGame();
+            spawnIntervalId = setInterval(createObstacle, 1500); // Каждые 1.5 сек новое препятствие
+        }
+
+        // Управление
+        document.getElementById('left-zone').addEventListener('click', () => movePlayer('left'));
+        document.getElementById('right-zone').addEventListener('click', () => movePlayer('right'));
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') movePlayer('left');
+            if (e.key === 'ArrowRight') movePlayer('right');
+        });
+
+        // Запуск
+        startGame();
+
+    </script>
+</body>
+</html>

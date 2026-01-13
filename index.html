@@ -36,6 +36,7 @@
             color: inherit;
             border: 2px solid transparent;
             position: relative;
+            display: block; /* Важно для ссылок */
         }
 
         .game-card:hover { transform: translateY(-3px); border-color: #3390ec; }
@@ -43,9 +44,24 @@
         .title { font-weight: bold; font-size: 14px; }
 
         /* Стиль для закрытой игры */
-        .locked { opacity: 0.6; filter: grayscale(0.8); }
+        .game-card.locked { 
+            opacity: 0.6; 
+            filter: grayscale(0.8); 
+        }
+        
         .lock-icon {
+            display: none; 
             position: absolute; top: 10px; right: 10px; font-size: 16px;
+        }
+
+        .game-card.locked .lock-icon { display: block; }
+        
+        /* Текст для отладки (потом уберем) */
+        #debug-info {
+            margin-top: 30px;
+            font-size: 10px;
+            color: #555;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -54,21 +70,21 @@
     <h1>Retro Boy</h1>
 
     <div class="game-list">
-        <!-- Бесплатная Змейка -->
+        <!-- Змейка -->
         <a href="zmei-index.html" class="game-card">
             <span class="icon">🐍</span>
             <span class="title">Snake</span>
         </a>
 
-        <!-- Бесплатный Тетрис -->
+        <!-- Тетрис -->
         <a href="tetris-index.html" class="game-card">
             <span class="icon">🧱</span>
             <span class="title">Tetris</span>
         </a>
 
-        <!-- ПЛАТНАЯ ИГРА (ПРИМЕР) -->
-        <!-- Обрати внимание: onclick вместо href -->
-        <div class="game-card locked" onclick="checkAccess('game_unlock_racer', 'racer.html')">
+        <!-- ГОНКИ: Внимание на этот блок -->
+        <!-- По умолчанию ставим onclick для проверки -->
+        <div id="racer-card" class="game-card locked" onclick="showBuyPopup()">
             <span class="lock-icon">🔒</span>
             <span class="icon">🏎️</span>
             <span class="title">Racer</span>
@@ -81,38 +97,58 @@
         </a>
     </div>
 
+    <div id="debug-info">Загрузка данных...</div>
+
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Функция проверки доступа
-        function checkAccess(productId, url) {
-            const isOwned = localStorage.getItem(productId) === 'true';
-            
-            if (isOwned) {
-                // Если куплено - переходим в игру
-                window.location.href = url;
-            } else {
-                // Если нет - предлагаем купить
-                tg.showPopup({
-                    title: 'Доступ закрыт',
-                    message: 'Эту игру нужно разблокировать в Магазине.',
-                    buttons: [
-                        {type: 'default', text: 'В магазин', id: 'go_shop'},
-                        {type: 'cancel'}
-                    ]
-                }, function(btnId) {
-                    if (btnId === 'go_shop') {
-                        window.location.href = 'shop.html';
-                    }
-                });
-            }
-        }
+        // Проверяем память
+        const isRacerOwned = localStorage.getItem('game_unlock_racer') === 'true';
         
-        // Визуально убираем замок, если игра куплена (для красоты)
-        // Пример: если Racer куплен, убираем класс locked
-        if (localStorage.getItem('game_unlock_racer') === 'true') {
-             // Логика обновления стилей (можно дописать позже)
+        // Вывод отладки на экран (чтобы ты видел, что происходит)
+        document.getElementById('debug-info').innerText = 
+            "Статус Racer: " + (isRacerOwned ? "КУПЛЕНО" : "НЕ КУПЛЕНО");
+
+        const racerCard = document.getElementById('racer-card');
+
+        if (isRacerOwned) {
+            // 1. Убираем визуальный замок
+            racerCard.classList.remove('locked');
+            
+            // 2. УДАЛЯЕМ старый onclick (чтобы не было конфликтов)
+            racerCard.onclick = null;
+            
+            // 3. Превращаем div в ссылку через JavaScript
+            racerCard.addEventListener('click', function() {
+                // Прямой переход. Если racer.html существует, он откроется.
+                window.location.href = 'racer.html';
+            });
+            
+            // (Дополнительно) Меняем курсор
+            racerCard.style.cursor = "pointer";
+        }
+
+        function showBuyPopup() {
+            // Если игра куплена, эта функция даже не должна вызываться, 
+            // но на всякий случай оставим проверку
+            if (localStorage.getItem('game_unlock_racer') === 'true') {
+                window.location.href = 'racer.html';
+                return;
+            }
+
+            tg.showPopup({
+                title: 'Закрыто 🔒',
+                message: 'Купите доступ в Магазине!',
+                buttons: [
+                    {type: 'default', text: 'Купить', id: 'go_shop'},
+                    {type: 'cancel'}
+                ]
+            }, function(btnId) {
+                if (btnId === 'go_shop') {
+                    window.location.href = 'shop.html';
+                }
+            });
         }
     </script>
 </body>
