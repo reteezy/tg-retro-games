@@ -1,4 +1,3 @@
-    
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -18,6 +17,12 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+        }
+
+        /* Кнопка Домой */
+        .home-btn {
+            position: absolute; top: 10px; left: 10px; 
+            text-decoration: none; font-size: 24px; z-index: 100;
         }
 
         h1 { margin-bottom: 10px; font-size: 24px; }
@@ -92,11 +97,9 @@
 </head>
 <body>
 
-    
-<!-- Кнопка НАЗАД В МЕНЮ -->
-<a href="index.html" style="position: absolute; top: 10px; left: 10px; text-decoration: none; font-size: 24px; z-index: 100;">В меню 🏠</a>
+    <!-- КНОПКА НАЗАД В МЕНЮ -->
+    <a href="index.html" class="home-btn">🏠</a>
 
-  
     <div class="score-board">
         <span>Счет: <span id="score">0</span></span>
         <span>Рекорд: <span id="high-score">0</span></span>
@@ -108,8 +111,6 @@
         <h2>GAME OVER</h2>
         <p>Ваш счет: <span id="final-score">0</span></p>
         <button id="restart-btn">Играть снова</button>
-        <br><br>
-        <small style="color: #aaa;">Здесь будет кнопка "Возродиться за ⭐"</small>
     </div>
 
     <div class="controls">
@@ -152,9 +153,7 @@
         let gameInterval;
         let isGameRunning = true;
 
-        // --- НАСТРОЙКА СКОРОСТИ ---
-        // 1000 / 7 = примерно 7 кадров в секунду.
-        // Если хочешь еще медленнее, поставь число 5 или 4 вместо 7.
+        // Скорость игры (7 кадров в секунду)
         window.onload = () => {
             gameInterval = setInterval(gameLoop, 1000 / 7); 
         };
@@ -170,12 +169,21 @@
             if (playerY < 0) playerY = tileCount - 1;
             if (playerY > tileCount - 1) playerY = 0;
 
+            // Фон
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = "#3390ec"; 
+            // --- ПРОВЕРКА СКИНА (НОВАЯ СИСТЕМА) ---
+            const isGold = localStorage.getItem('skin_gold_snake') === 'true';
+
             for (let i = 0; i < trail.length; i++) {
-                ctx.fillStyle = i === trail.length - 1 ? "#ffffff" : "#3390ec"; 
+                // Если куплен скин - Золотой, если нет - Синий
+                if (isGold) {
+                     ctx.fillStyle = i === trail.length - 1 ? "#FFFFFF" : "#FFD700"; // Золото
+                } else {
+                     ctx.fillStyle = i === trail.length - 1 ? "#ffffff" : "#3390ec"; // Синий
+                }
+                
                 ctx.fillRect(trail[i].x * gridSize, trail[i].y * gridSize, gridSize - 2, gridSize - 2);
 
                 if (trail[i].x === playerX && trail[i].y === playerY && tail > 5) {
@@ -188,6 +196,7 @@
                 trail.shift();
             }
 
+            // Яблоко
             ctx.fillStyle = "#ff3b30"; 
             ctx.fillRect(appleX * gridSize, appleY * gridSize, gridSize - 2, gridSize - 2);
 
@@ -238,7 +247,6 @@
             }
         }
 
-        // Добавил проверку try-catch, чтобы не было ошибок в обычном браузере
         document.getElementById('left').addEventListener('click', () => { if(xVelocity !== 1) { xVelocity = -1; yVelocity = 0; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
         document.getElementById('up').addEventListener('click', () => { if(yVelocity !== 1) { xVelocity = 0; yVelocity = -1; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
         document.getElementById('right').addEventListener('click', () => { if(xVelocity !== -1) { xVelocity = 1; yVelocity = 0; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});

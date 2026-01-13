@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Shop</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: sans-serif;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 { margin-bottom: 20px; }
+        
+        /* Сетка товаров */
+        .shop-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .item {
+            background-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #333;
+            transition: 0.2s;
+        }
+
+        .item-info { text-align: left; }
+        .item-title { font-weight: bold; font-size: 16px; display: block; }
+        .item-desc { font-size: 12px; color: #888; margin-top: 4px; }
+
+        .btn-buy {
+            background-color: #3390ec;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 80px;
+        }
+
+        .btn-buy.owned {
+            background-color: transparent;
+            color: #34c759;
+            border: 1px solid #34c759;
+            cursor: default;
+        }
+
+        /* Донат */
+        .donate-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+        }
+        .btn-donate {
+            background: linear-gradient(45deg, #ff9500, #ffcc00);
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 149, 0, 0.3);
+        }
+
+        .home-btn {
+            position: absolute; top: 10px; left: 10px; 
+            text-decoration: none; font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="home-btn">🏠</a>
+    
+    <h1>Marketplace</h1>
+
+    <div class="shop-container" id="shop-list">
+        <!-- Товары появятся здесь автоматически -->
+    </div>
+
+    <div class="donate-section">
+        <p>Поддержи разработку новых игр! 🎮</p>
+        <button class="btn-donate" onclick="openDonate()">💸 Задонатить</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- СПИСОК ТОВАРОВ (НАСТРОЙКИ) ---
+        // id: уникальное имя (используем его для проверки покупки)
+        // name: название на экране
+        // desc: описание
+        // price: текст цены (пока бутафория)
+        const catalog = [
+            { 
+                id: 'skin_gold_snake', 
+                name: 'Золотая Змея 🐍', 
+                desc: 'Эксклюзивный скин', 
+                price: 'Бесплатно' 
+            },
+            { 
+                id: 'game_unlock_racer', 
+                name: 'Гонки (Игра) 🏎️', 
+                desc: 'Разблокировать доступ', 
+                price: '100 ⭐' // Пример будущей цены
+            }
+        ];
+
+        const shopContainer = document.getElementById('shop-list');
+
+        // Функция отрисовки товаров
+        function renderShop() {
+            shopContainer.innerHTML = ''; // Очистить список
+
+            catalog.forEach(product => {
+                // Проверяем, куплено ли уже
+                const isOwned = localStorage.getItem(product.id) === 'true';
+
+                // Создаем HTML для товара
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-title">${product.name}</span>
+                        <span class="item-desc">${product.desc}</span>
+                    </div>
+                    <button class="btn-buy ${isOwned ? 'owned' : ''}" 
+                            onclick="buyItem('${product.id}')">
+                        ${isOwned ? 'Куплено' : 'Купить'}
+                    </button>
+                `;
+                shopContainer.appendChild(itemDiv);
+            });
+        }
+
+        function buyItem(id) {
+            if (localStorage.getItem(id) === 'true') return;
+
+            // Имитация покупки
+            if (confirm('Подтвердить покупку?')) {
+                localStorage.setItem(id, 'true'); // Сохраняем покупку
+                tg.HapticFeedback.notificationOccurred('success');
+                renderShop(); // Обновляем кнопки
+            }
+        }
+
+        function openDonate() {
+            // Вставь сюда свою ссылку (DonationAlerts, Boosty, PayPal и т.д.)
+            const donateUrl = "https://www.donationalerts.com/"; 
+            tg.openLink(donateUrl);
+        }
+
+        // Запуск при загрузке
+        renderShop();
+    </script>
+</body>
+</html>

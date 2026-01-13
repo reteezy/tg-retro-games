@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GameBoy Hub</title>
+    <title>Retro Boy</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -16,19 +16,11 @@
             flex-direction: column;
             align-items: center;
         }
-
-        h1 {
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 30px;
-            text-align: center;
-            color: #3390ec;
-            text-shadow: 0 0 10px rgba(51, 144, 236, 0.5);
-        }
-
+        h1 { text-transform: uppercase; letter-spacing: 2px; color: #3390ec; }
+        
         .game-list {
             display: grid;
-            grid-template-columns: 1fr 1fr; /* Две колонки */
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
             width: 100%;
             max-width: 400px;
@@ -42,38 +34,18 @@
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            transition: transform 0.2s, box-shadow 0.2s;
             border: 2px solid transparent;
+            position: relative;
         }
 
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            border-color: #3390ec;
-        }
+        .game-card:hover { transform: translateY(-3px); border-color: #3390ec; }
+        .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+        .title { font-weight: bold; font-size: 14px; }
 
-        .icon {
-            font-size: 40px;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .title {
-            font-weight: bold;
-            font-size: 16px;
-        }
-
-        /* Стиль для будущих закрытых игр */
-        .game-card.locked {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(1);
-        }
-        
-        .footer {
-            margin-top: 50px;
-            font-size: 12px;
-            opacity: 0.5;
+        /* Стиль для закрытой игры */
+        .locked { opacity: 0.6; filter: grayscale(0.8); }
+        .lock-icon {
+            position: absolute; top: 10px; right: 10px; font-size: 16px;
         }
     </style>
 </head>
@@ -82,35 +54,66 @@
     <h1>Retro Boy</h1>
 
     <div class="game-list">
-        <!-- Ссылка на Змейку -->
+        <!-- Бесплатная Змейка -->
         <a href="zmei-index.html" class="game-card">
             <span class="icon">🐍</span>
-            <span class="title">Змейка</span>
+            <span class="title">Snake</span>
         </a>
 
-        <!-- Ссылка на Тетрис -->
+        <!-- Бесплатный Тетрис -->
         <a href="tetris-index.html" class="game-card">
             <span class="icon">🧱</span>
-            <span class="title">Тетрис</span>
+            <span class="title">Tetris</span>
         </a>
 
-        <!-- Заглушка для будущей игры -->
-        <div class="game-card locked">
-            <span class="icon">🔒</span>
-            <span class="title">Скоро...</span>
+        <!-- ПЛАТНАЯ ИГРА (ПРИМЕР) -->
+        <!-- Обрати внимание: onclick вместо href -->
+        <div class="game-card locked" onclick="checkAccess('game_unlock_racer', 'racer.html')">
+            <span class="lock-icon">🔒</span>
+            <span class="icon">🏎️</span>
+            <span class="title">Racer</span>
         </div>
-        
-        <div class="game-card locked">
-            <span class="icon">🔒</span>
-            <span class="title">Скоро...</span>
-        </div>
-    </div>
 
-    <div class="footer">v1.0 by My Studio</div>
+        <!-- Магазин -->
+        <a href="shop.html" class="game-card" style="border-color: #ff9500;">
+            <span class="icon">🛒</span>
+            <span class="title">Shop</span>
+        </a>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+
+        // Функция проверки доступа
+        function checkAccess(productId, url) {
+            const isOwned = localStorage.getItem(productId) === 'true';
+            
+            if (isOwned) {
+                // Если куплено - переходим в игру
+                window.location.href = url;
+            } else {
+                // Если нет - предлагаем купить
+                tg.showPopup({
+                    title: 'Доступ закрыт',
+                    message: 'Эту игру нужно разблокировать в Магазине.',
+                    buttons: [
+                        {type: 'default', text: 'В магазин', id: 'go_shop'},
+                        {type: 'cancel'}
+                    ]
+                }, function(btnId) {
+                    if (btnId === 'go_shop') {
+                        window.location.href = 'shop.html';
+                    }
+                });
+            }
+        }
+        
+        // Визуально убираем замок, если игра куплена (для красоты)
+        // Пример: если Racer куплен, убираем класс locked
+        if (localStorage.getItem('game_unlock_racer') === 'true') {
+             // Логика обновления стилей (можно дописать позже)
+        }
     </script>
 </body>
 </html>
