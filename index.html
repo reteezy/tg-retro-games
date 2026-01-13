@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameBoy Hub</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-align: center;
+            color: #3390ec;
+            text-shadow: 0 0 10px rgba(51, 144, 236, 0.5);
+        }
+
+        .game-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Две колонки */
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .game-card {
+            background-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border-color: #3390ec;
+        }
+
+        .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* Стиль для будущих закрытых игр */
+        .game-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+        
+        .footer {
+            margin-top: 50px;
+            font-size: 12px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Retro Boy</h1>
+
+    <div class="game-list">
+        <!-- Ссылка на Змейку -->
+        <a href="zmei-index.html" class="game-card">
+            <span class="icon">🐍</span>
+            <span class="title">Змейка</span>
+        </a>
+
+        <!-- Ссылка на Тетрис -->
+        <a href="tetris-index.html" class="game-card">
+            <span class="icon">🧱</span>
+            <span class="title">Тетрис</span>
+        </a>
+
+        <!-- Заглушка для будущей игры -->
+        <div class="game-card locked">
+            <span class="icon">🔒</span>
+            <span class="title">Скоро...</span>
+        </div>
+        
+        <div class="game-card locked">
+            <span class="icon">🔒</span>
+            <span class="title">Скоро...</span>
+        </div>
+    </div>
+
+    <div class="footer">v1.0 by My Studio</div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+    </script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+    
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake TG</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #1c1c1e);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 { margin-bottom: 10px; font-size: 24px; }
+        
+        #game-board {
+            border: 2px solid var(--tg-theme-button-color, #3390ec);
+            background-color: #000;
+            box-shadow: 0 0 15px rgba(51, 144, 236, 0.3);
+        }
+
+        .score-board {
+            font-size: 18px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        .btn:active { opacity: 0.7; }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #3390ec;
+            z-index: 10;
+        }
+        
+        #restart-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3390ec;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    
+<!-- Кнопка НАЗАД В МЕНЮ -->
+<a href="index.html" style="position: absolute; top: 10px; left: 10px; text-decoration: none; font-size: 24px; z-index: 100;">В меню 🏠</a>
+
+  
+    <div class="score-board">
+        <span>Счет: <span id="score">0</span></span>
+        <span>Рекорд: <span id="high-score">0</span></span>
+    </div>
+
+    <canvas id="game-board" width="300" height="300"></canvas>
+
+    <div id="game-over">
+        <h2>GAME OVER</h2>
+        <p>Ваш счет: <span id="final-score">0</span></p>
+        <button id="restart-btn">Играть снова</button>
+        <br><br>
+        <small style="color: #aaa;">Здесь будет кнопка "Возродиться за ⭐"</small>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-up" id="up">⬆️</button>
+        <button class="btn btn-left" id="left">⬅️</button>
+        <button class="btn btn-down" id="down">⬇️</button>
+        <button class="btn btn-right" id="right">➡️</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand(); 
+
+        const canvas = document.getElementById('game-board');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score');
+        const gameOverScreen = document.getElementById('game-over');
+        const finalScoreElement = document.getElementById('final-score');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const gridSize = 15; 
+        const tileCount = canvas.width / gridSize; 
+        
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        highScoreElement.innerText = highScore;
+
+        let xVelocity = 0;
+        let yVelocity = 0;
+        let playerX = 10;
+        let playerY = 10;
+        
+        let trail = [];
+        let tail = 5;
+        
+        let appleX = 15;
+        let appleY = 15;
+
+        let gameInterval;
+        let isGameRunning = true;
+
+        // --- НАСТРОЙКА СКОРОСТИ ---
+        // 1000 / 7 = примерно 7 кадров в секунду.
+        // Если хочешь еще медленнее, поставь число 5 или 4 вместо 7.
+        window.onload = () => {
+            gameInterval = setInterval(gameLoop, 1000 / 7); 
+        };
+
+        function gameLoop() {
+            if (!isGameRunning) return;
+
+            playerX += xVelocity;
+            playerY += yVelocity;
+
+            if (playerX < 0) playerX = tileCount - 1;
+            if (playerX > tileCount - 1) playerX = 0;
+            if (playerY < 0) playerY = tileCount - 1;
+            if (playerY > tileCount - 1) playerY = 0;
+
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#3390ec"; 
+            for (let i = 0; i < trail.length; i++) {
+                ctx.fillStyle = i === trail.length - 1 ? "#ffffff" : "#3390ec"; 
+                ctx.fillRect(trail[i].x * gridSize, trail[i].y * gridSize, gridSize - 2, gridSize - 2);
+
+                if (trail[i].x === playerX && trail[i].y === playerY && tail > 5) {
+                    endGame();
+                }
+            }
+
+            trail.push({ x: playerX, y: playerY });
+            while (trail.length > tail) {
+                trail.shift();
+            }
+
+            ctx.fillStyle = "#ff3b30"; 
+            ctx.fillRect(appleX * gridSize, appleY * gridSize, gridSize - 2, gridSize - 2);
+
+            if (appleX === playerX && appleY === playerY) {
+                tail++;
+                score += 10;
+                scoreElement.innerText = score;
+                try { tg.HapticFeedback.impactOccurred('medium'); } catch(e){}
+                
+                appleX = Math.floor(Math.random() * tileCount);
+                appleY = Math.floor(Math.random() * tileCount);
+            }
+        }
+
+        function endGame() {
+            isGameRunning = false;
+            try { tg.HapticFeedback.notificationOccurred('error'); } catch(e){}
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                highScoreElement.innerText = highScore;
+            }
+            
+            finalScoreElement.innerText = score;
+            gameOverScreen.style.display = 'block';
+        }
+
+        function resetGame() {
+            playerX = 10; playerY = 10;
+            xVelocity = 0; yVelocity = 0;
+            tail = 5;
+            trail = [];
+            score = 0;
+            scoreElement.innerText = score;
+            isGameRunning = true;
+            gameOverScreen.style.display = 'none';
+        }
+
+        document.addEventListener("keydown", keyPush);
+        function keyPush(evt) {
+            if (!isGameRunning) return;
+            switch (evt.keyCode) {
+                case 37: if(xVelocity !== 1) { xVelocity = -1; yVelocity = 0; } break; 
+                case 38: if(yVelocity !== 1) { xVelocity = 0; yVelocity = -1; } break; 
+                case 39: if(xVelocity !== -1) { xVelocity = 1; yVelocity = 0; } break; 
+                case 40: if(yVelocity !== -1) { xVelocity = 0; yVelocity = 1; } break; 
+            }
+        }
+
+        // Добавил проверку try-catch, чтобы не было ошибок в обычном браузере
+        document.getElementById('left').addEventListener('click', () => { if(xVelocity !== 1) { xVelocity = -1; yVelocity = 0; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
+        document.getElementById('up').addEventListener('click', () => { if(yVelocity !== 1) { xVelocity = 0; yVelocity = -1; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
+        document.getElementById('right').addEventListener('click', () => { if(xVelocity !== -1) { xVelocity = 1; yVelocity = 0; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
+        document.getElementById('down').addEventListener('click', () => { if(yVelocity !== -1) { xVelocity = 0; yVelocity = 1; try{tg.HapticFeedback.selectionChanged();}catch(e){} }});
+
+        restartBtn.addEventListener('click', resetGame);
+    </script>
+</body>
+</html>
