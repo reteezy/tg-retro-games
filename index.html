@@ -11,7 +11,8 @@
             color: var(--tg-theme-text-color, #ffffff);
             font-family: sans-serif;
             margin: 0;
-            padding: 20px;
+            /* Добавили отступ снизу, чтобы таб-бар не перекрывал контент */
+            padding: 20px 20px 90px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -36,33 +37,58 @@
             color: inherit;
             border: 2px solid transparent;
             position: relative;
-            display: block; /* Важно для ссылок */
+            display: block;
+            transition: transform 0.2s;
         }
 
         .game-card:hover { transform: translateY(-3px); border-color: #3390ec; }
         .icon { font-size: 40px; display: block; margin-bottom: 10px; }
         .title { font-weight: bold; font-size: 14px; }
 
-        /* Стиль для закрытой игры */
-        .game-card.locked { 
-            opacity: 0.6; 
-            filter: grayscale(0.8); 
-        }
-        
-        .lock-icon {
-            display: none; 
-            position: absolute; top: 10px; right: 10px; font-size: 16px;
-        }
-
+        .game-card.locked { opacity: 0.6; filter: grayscale(0.8); }
+        .lock-icon { display: none; position: absolute; top: 10px; right: 10px; font-size: 16px; }
         .game-card.locked .lock-icon { display: block; }
         
-        /* Текст для отладки (потом уберем) */
-        #debug-info {
-            margin-top: 30px;
-            font-size: 10px;
-            color: #555;
-            font-family: monospace;
+        /* --- СТИЛИ ДЛЯ ТАБ-БАРА (НИЖНЕЕ МЕНЮ) --- */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            background-color: var(--tg-theme-secondary-bg-color, #2c2c2e);
+            border-top: 1px solid #333;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            padding-bottom: 10px; /* Учет полоски жестов на iPhone */
+            box-sizing: border-box; /* Чтобы padding не увеличивал ширину */
         }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #8e8e93; /* Серый цвет для неактивных */
+            font-size: 10px;
+            cursor: pointer;
+            width: 25%;
+            height: 100%;
+        }
+
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* Активная кнопка (где мы сейчас) */
+        .tab-item.active {
+            color: var(--tg-theme-button-color, #3390ec);
+        }
+        
+        #debug-info { margin-top: 30px; font-size: 10px; color: #555; }
     </style>
 </head>
 <body>
@@ -82,8 +108,7 @@
             <span class="title">Tetris</span>
         </a>
 
-        <!-- ГОНКИ: Внимание на этот блок -->
-        <!-- По умолчанию ставим onclick для проверки -->
+        <!-- ГОНКИ -->
         <div id="racer-card" class="game-card locked" onclick="showBuyPopup()">
             <span class="lock-icon">🔒</span>
             <span class="icon">🏎️</span>
@@ -97,46 +122,49 @@
         </a>
     </div>
 
+    <!-- ТАБ-БАР -->
+    <nav class="tab-bar">
+        <div class="tab-item active">
+            <div class="tab-icon">🏠</div>
+            <span>Домой</span>
+        </div>
+        <div class="tab-item">
+            <div class="tab-icon">🏆</div>
+            <span>Топ</span>
+        </div>
+        <div class="tab-item">
+            <div class="tab-icon">👤</div>
+            <span>Профиль</span>
+        </div>
+        <div class="tab-item">
+            <div class="tab-icon">⚙️</div>
+            <span>Настройки</span>
+        </div>
+    </nav>
+
     <div id="debug-info">Загрузка данных...</div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Проверяем память
         const isRacerOwned = localStorage.getItem('game_unlock_racer') === 'true';
-        
-        // Вывод отладки на экран (чтобы ты видел, что происходит)
-        document.getElementById('debug-info').innerText = 
-            "Статус Racer: " + (isRacerOwned ? "КУПЛЕНО" : "НЕ КУПЛЕНО");
+        document.getElementById('debug-info').innerText = "Статус Racer: " + (isRacerOwned ? "КУПЛЕНО" : "НЕ КУПЛЕНО");
 
         const racerCard = document.getElementById('racer-card');
 
         if (isRacerOwned) {
-            // 1. Убираем визуальный замок
             racerCard.classList.remove('locked');
-            
-            // 2. УДАЛЯЕМ старый onclick (чтобы не было конфликтов)
             racerCard.onclick = null;
-            
-            // 3. Превращаем div в ссылку через JavaScript
-            racerCard.addEventListener('click', function() {
-                // Прямой переход. Если racer.html существует, он откроется.
-                window.location.href = 'racer.html';
-            });
-            
-            // (Дополнительно) Меняем курсор
+            racerCard.addEventListener('click', function() { window.location.href = 'racer.html'; });
             racerCard.style.cursor = "pointer";
         }
 
         function showBuyPopup() {
-            // Если игра куплена, эта функция даже не должна вызываться, 
-            // но на всякий случай оставим проверку
             if (localStorage.getItem('game_unlock_racer') === 'true') {
                 window.location.href = 'racer.html';
                 return;
             }
-
             tg.showPopup({
                 title: 'Закрыто 🔒',
                 message: 'Купите доступ в Магазине!',
@@ -145,9 +173,7 @@
                     {type: 'cancel'}
                 ]
             }, function(btnId) {
-                if (btnId === 'go_shop') {
-                    window.location.href = 'shop.html';
-                }
+                if (btnId === 'go_shop') { window.location.href = 'shop.html'; }
             });
         }
     </script>
