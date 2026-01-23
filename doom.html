@@ -5,53 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOOM TG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Библиотека эмулятора (движок берем с CDN, это безопасно) -->
+    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #000;
+            background-color: #1c1c1e;
             height: 100vh;
-            overflow: hidden; /* Убираем скролл */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Контейнер для игры */
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         /* Кнопка Домой */
         .home-btn {
             position: absolute; 
-            top: 10px; 
-            left: 10px; 
-            width: 40px;
+            top: 15px; 
+            left: 15px; 
+            width: 40px; 
             height: 40px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             text-decoration: none; 
-            font-size: 24px; 
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 20px; 
+            z-index: 2000;
+            backdrop-filter: blur(4px);
         }
 
-        /* Окно с игрой */
-        .game-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: block;
-        }
-
-        /* Экран загрузки (пока игра не прогрузится) */
-        .loader {
+        /* Экран загрузки */
+        #loading {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            color: #666;
-            font-family: sans-serif;
-            font-size: 12px;
-            z-index: -1;
+            color: #3390ec;
+            font-family: monospace;
+            font-size: 16px;
+            text-align: center;
+            z-index: 10;
+        }
+        
+        /* Стили для мобильного управления js-dos */
+        .dosbox-container {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        
+        /* Исправление, чтобы клавиатура не вылезала */
+        canvas {
+            touch-action: none; 
         }
     </style>
 </head>
@@ -59,23 +72,40 @@
 
     <a href="index.html" class="home-btn">🏠</a>
     
-    <div class="loader">Загрузка DOOM...</div>
-
-    <!-- 
-        Используем плеер Dos.Zone.
-        bundleUrl - это ссылка на архив с игрой.
-    -->
-    <iframe 
-        class="game-frame"
-        src="https://dos.zone/player/?bundleUrl=https%3A%2F%2Fcdn.dos.zone%2Foriginal%2F2X%2F2%2F24b00b14f118580763d40f349688b6f7281c97a8.jsdos&dosboxConf=%5Bsdl%5D%0Aautolock%3Dtrue%0A%0A%5Brender%5D%0Aaspect%3Dtrue"
-        allowfullscreen>
-    </iframe>
+    <div id="loading">Инициализация...<br>Загрузка файлов...</div>
+    <canvas id="canvas"></canvas>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Включаем вертикальный свайп, чтобы игра не закрывалась случайно
-        tg.enableClosingConfirmation();
+
+        const canvas = document.getElementById("canvas");
+        const loading = document.getElementById("loading");
+
+        // Настраиваем DOSBox
+        Dos(canvas, { 
+            // Эти файлы движка берем с официального сайта, они работают стабильно
+            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
+            cycles: 1000,
+            autolock: false,
+        }).ready(function (fs, main) {
+            
+            loading.innerHTML = "Распаковка DOOM...";
+
+            // ВАЖНО: Здесь мы указываем имя твоего файла, который ты загрузил на GitHub
+            fs.extract("doom.zip").then(function () {
+                
+                loading.style.display = 'none'; // Скрываем надпись загрузки
+                
+                // Запускаем EXE файл внутри архива
+                main(["-c", "DOOM.EXE"]).then(function (ci) {
+                    console.log("Doom started");
+                });
+            }).catch(function(err) {
+                loading.innerHTML = "Ошибка загрузки:<br>" + err;
+                loading.style.color = "red";
+            });
+        });
     </script>
 </body>
 </html>
