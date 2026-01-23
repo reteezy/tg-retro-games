@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOOM TG</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем эмулятор DOS (js-dos v6.22) -->
+    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1c1c1e;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Канвас игры на весь экран */
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Кнопка Домой (поверх игры) */
+        .home-btn {
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            text-decoration: none; 
+            font-size: 24px; 
+            z-index: 1000;
+            opacity: 0.5; /* Полупрозрачная, чтобы не мешать */
+        }
+        .home-btn:hover { opacity: 1; }
+
+        /* Скрываем лишние элементы js-dos если нужно */
+        .dosbox-container {
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body>
+
+    <a href="index.html" class="home-btn">🏠</a>
+    
+    <!-- Сюда загрузится игра -->
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // Настройка эмулятора
+        Dos(document.getElementById("canvas"), { 
+            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
+            cycles: 1000, // Производительность
+            autolock: false,
+        }).ready(function (fs, main) {
+            // Загружаем архив с игрой (Shareware Doom)
+            // Используем стабильный CDN
+            fs.extract("https://js-dos.com/6.22/current/test/doom.zip").then(function () {
+                // Запускаем файл DOOM.EXE
+                main(["-c", "DOOM.EXE"]).then(function (ci) {
+                    // Игра запущена
+                    console.log("Doom started");
+                });
+            });
+        });
+    </script>
+</body>
+</html>

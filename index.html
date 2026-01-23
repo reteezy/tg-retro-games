@@ -115,6 +115,13 @@
             <span class="title">Racer</span>
         </div>
 
+        <!-- DOOM CARD -->
+        <div id="doom-card" class="game-card locked" onclick="checkAccess('game_unlock_doom', 'doom.html')">
+            <span class="lock-icon">🔒</span>
+            <span class="icon">👹</span>
+            <span class="title">DOOM</span>
+        </div>   
+
         <!-- Магазин -->
         <a href="shop.html" class="game-card" style="border-color: #ff9500;">
             <span class="icon">🛒</span>
@@ -159,6 +166,19 @@
             racerCard.addEventListener('click', function() { window.location.href = 'racer.html'; });
             racerCard.style.cursor = "pointer";
         }
+        // --- ПРОВЕРКА DOOM ---
+        const isDoomOwned = localStorage.getItem('game_unlock_doom') === 'true';
+        
+        // Для отладки
+        document.getElementById('debug-info').innerText += " | DOOM: " + (isDoomOwned ? "OK" : "NO");
+
+        const doomCard = document.getElementById('doom-card');
+        if (doomCard && isDoomOwned) {
+            doomCard.classList.remove('locked');
+            doomCard.onclick = null;
+            doomCard.addEventListener('click', function() { window.location.href = 'doom.html'; });
+            doomCard.style.cursor = "pointer";
+        } 
 
         function showBuyPopup() {
             if (localStorage.getItem('game_unlock_racer') === 'true') {
