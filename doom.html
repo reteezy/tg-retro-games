@@ -5,43 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOOM TG</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем эмулятор DOS (js-dos v6.22) -->
-    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #1c1c1e;
+            background-color: #000;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden; /* Убираем скролл */
             display: flex;
             flex-direction: column;
-            align-items: center;
         }
 
-        /* Канвас игры на весь экран */
-        #canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Кнопка Домой (поверх игры) */
+        /* Кнопка Домой */
         .home-btn {
             position: absolute; 
             top: 10px; 
             left: 10px; 
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             text-decoration: none; 
             font-size: 24px; 
             z-index: 1000;
-            opacity: 0.5; /* Полупрозрачная, чтобы не мешать */
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .home-btn:hover { opacity: 1; }
 
-        /* Скрываем лишние элементы js-dos если нужно */
-        .dosbox-container {
-            width: 100% !important;
-            height: 100% !important;
+        /* Окно с игрой */
+        .game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Экран загрузки (пока игра не прогрузится) */
+        .loader {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-family: sans-serif;
+            font-size: 12px;
+            z-index: -1;
         }
     </style>
 </head>
@@ -49,29 +59,23 @@
 
     <a href="index.html" class="home-btn">🏠</a>
     
-    <!-- Сюда загрузится игра -->
-    <canvas id="canvas"></canvas>
+    <div class="loader">Загрузка DOOM...</div>
+
+    <!-- 
+        Используем плеер Dos.Zone.
+        bundleUrl - это ссылка на архив с игрой.
+    -->
+    <iframe 
+        class="game-frame"
+        src="https://dos.zone/player/?bundleUrl=https%3A%2F%2Fcdn.dos.zone%2Foriginal%2F2X%2F2%2F24b00b14f118580763d40f349688b6f7281c97a8.jsdos&dosboxConf=%5Bsdl%5D%0Aautolock%3Dtrue%0A%0A%5Brender%5D%0Aaspect%3Dtrue"
+        allowfullscreen>
+    </iframe>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-
-        // Настройка эмулятора
-        Dos(document.getElementById("canvas"), { 
-            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
-            cycles: 1000, // Производительность
-            autolock: false,
-        }).ready(function (fs, main) {
-            // Загружаем архив с игрой (Shareware Doom)
-            // Используем стабильный CDN
-            fs.extract("https://js-dos.com/6.22/current/test/doom.zip").then(function () {
-                // Запускаем файл DOOM.EXE
-                main(["-c", "DOOM.EXE"]).then(function (ci) {
-                    // Игра запущена
-                    console.log("Doom started");
-                });
-            });
-        });
+        // Включаем вертикальный свайп, чтобы игра не закрывалась случайно
+        tg.enableClosingConfirmation();
     </script>
 </body>
 </html>
