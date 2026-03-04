@@ -86,7 +86,7 @@
         Dos(canvas, { 
             // Эти файлы движка берем с официального сайта, они работают стабильно
             wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
-            cycles: 1000,
+            cycles: 25000,  // 1000 было слишком медленно; 25000 — оптимально для Doom
             autolock: false,
         }).ready(function (fs, main) {
             
