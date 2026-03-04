@@ -88,6 +88,30 @@
             wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
             cycles: 25000,  // 1000 было слишком медленно; 25000 — оптимально для Doom
             autolock: false,
+            // Сенсорное управление для телефона (SDL scancodes)
+            jsdosConf: {
+                layersConfig: {
+                    version: 2,
+                    layers: [{
+                        grid: "square",
+                        title: "Doom",
+                        controls: [
+                            // D-pad: движение
+                            { row: 0, column: 1, symbol: "↑", type: "Key", mapTo: [82] },
+                            { row: 2, column: 1, symbol: "↓", type: "Key", mapTo: [81] },
+                            { row: 1, column: 0, symbol: "←", type: "Key", mapTo: [80] },
+                            { row: 1, column: 2, symbol: "→", type: "Key", mapTo: [79] },
+                            // Действия справа
+                            { row: 0, column: 4, symbol: "🔫", type: "Key", mapTo: [224] },
+                            { row: 1, column: 4, symbol: "E", type: "Key", mapTo: [40] },
+                            { row: 2, column: 4, symbol: "▶", type: "Key", mapTo: [44] },
+                            // Клавиатура для доп. клавиш
+                            { row: 3, column: 2, symbol: "⌨", type: "Keyboard" }
+                        ]
+                    }]
+                }
+            },
+            scaleControls: 0.28
         }).ready(function (fs, main) {
             
             loading.innerHTML = "Распаковка DOOM...";
